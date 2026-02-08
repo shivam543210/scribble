@@ -1,0 +1,371 @@
+/* Game Controls */
+.game-controls {
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.game-setup {
+  text-align: center;
+}
+
+.game-setup h3 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.setting-group {
+  margin-bottom: 15px;
+}
+
+.setting-group label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #666;
+  font-size: 14px;
+}
+
+.setting-group input[type="number"] {
+  width: 80px;
+  padding: 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.start-game-btn {
+  padding: 12px 30px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+.start-game-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.game-controls.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.round-info {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.timer {
+  font-size: 24px;
+  font-weight: bold;
+  padding: 5px 15px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+}
+
+.drawer-info,
+.guesser-info {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.drawer-info h3,
+.guesser-info h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.current-word {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 5px 15px;
+  border-radius: 6px;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.drawer-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 8px;
+}
+
+.word-hint {
+  font-size: 24px;
+  letter-spacing: 8px;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.hint-btn {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  border: 2px solid white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.hint-btn:hover {
+  background: white;
+  color: #667eea;
+}
+
+/* Word Selection Modal */
+.word-selection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.word-selection-modal {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 500px;
+}
+
+.word-selection-modal h2 {
+  color: #333;
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+.word-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.word-option {
+  padding: 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: capitalize;
+}
+
+.word-option:hover {
+  background: #5568d3;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Leaderboard Mini */
+.leaderboard-mini {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.leaderboard-mini h4 {
+  margin-bottom: 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.player-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.player-score .rank {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.player-score .player-name {
+  flex: 1;
+}
+
+.player-score .score {
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* Canvas Disabled State */
+.drawing-canvas.disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.drawing-disabled-notice {
+  flex: 1;
+  text-align: center;
+  color: #e74c3c;
+  font-weight: 600;
+  background: #fff3f3;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* Chat Updates for Game Mode */
+.guess-message {
+  background: #e3f2fd !important;
+  border-left: 3px solid #2196F3;
+}
+
+.correct-guess-message {
+  background: #e8f5e9 !important;
+  border-left: 3px solid #4CAF50;
+  animation: correctGuessAnimation 0.5s ease-out;
+}
+
+@keyframes correctGuessAnimation {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.system-message {
+  background: #f5f5f5 !important;
+  text-align: center;
+  font-style: italic;
+  border-left: 3px solid #2196F3;
+}
+
+.system-message .message-username {
+  color: #2196F3 !important;
+  font-weight: bold;
+}
+
+.chat-send-btn {
+  min-width: 70px;
+}
+
+/* Main Area Layout */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-controls-container {
+  margin-bottom: 15px;
+}
+
+.canvas-area {
+  flex: 1;
+}
+
+/* Room Content Update */
+.room-content {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+/* Responsive Updates */
+@media (max-width: 1024px) {
+  .word-selection-modal {
+    max-width: 90%;
+    padding: 30px;
+  }
+  
+  .word-option {
+    padding: 15px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .timer {
+    font-size: 20px;
+  }
+  
+  .word-hint {
+    font-size: 18px;
+    letter-spacing: 4px;
+  }
+  
+  .leaderboard-mini {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .game-controls-container {
+    order: -1;
+  }
+}
+
+/* Additional Polish */
+.toolbar button:disabled,
+.toolbar input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-item.drawer {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.user-item.drawer .user-name {
+  color: white;
+}
+
+.user-item.drawer::after {
+  content: "✏️";
+  margin-left: auto;
+}

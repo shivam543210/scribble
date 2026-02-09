@@ -22,6 +22,7 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
   const [showGame, setShowGame] = useState(true);
   const [isGameActive, setIsGameActive] = useState(false);
   const [isDrawer, setIsDrawer] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +74,8 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
       socketService.socket.off('round-started-guesser', handleRoundStartedGuesser);
     };
   }, [currentUser]);
+
+
 
   /**
    * Handles leave room
@@ -151,6 +154,7 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
               roomId={roomId} 
               currentUser={currentUser}
               isGameActive={isGameActive}
+              users={users}
             />
           )}
           <button 
@@ -159,6 +163,9 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
           >
             {showChat ? 'Hide Chat →' : '← Show Chat'}
           </button>
+
+          {/* Leaderboard */}
+
         </div>
       </div>
     </div>

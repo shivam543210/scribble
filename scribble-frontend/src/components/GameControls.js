@@ -9,7 +9,7 @@ import socketService from '../utils/socket';
  *   users: Array
  * }
  */
-const GameControls = ({ roomId, currentUser, users }) => {
+const GameControls = ({ roomId, currentUser, users, onPlayersUpdate }) => {
   const [gameState, setGameState] = useState({
     isActive: false,
     isRoundActive: false,
@@ -24,6 +24,7 @@ const GameControls = ({ roomId, currentUser, users }) => {
   const [selectedWord, setSelectedWord] = useState('');
   const [maskedWord, setMaskedWord] = useState('');
   const [showWordSelection, setShowWordSelection] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [settings, setSettings] = useState({
     rounds: 3,
@@ -98,11 +99,7 @@ const GameControls = ({ roomId, currentUser, users }) => {
       console.log(`${data.player.username} guessed correctly! +${data.points} points`);
     };
 
-    // Listen for leaderboard update
-    // Receives: { leaderboard: Array<{ id: string, username: string, score: number }> }
-    const handleLeaderboardUpdate = (data) => {
-      setPlayers(data.leaderboard);
-    };
+
 
     // Listen for hint revealed
     // Receives: { hint: string }
@@ -134,7 +131,7 @@ const GameControls = ({ roomId, currentUser, users }) => {
     socketService.socket.on('round-started-guesser', handleRoundStartedGuesser);
     socketService.socket.on('word-selected', handleWordSelected);
     socketService.socket.on('correct-guess', handleCorrectGuess);
-    socketService.socket.on('leaderboard-update', handleLeaderboardUpdate);
+
     socketService.socket.on('hint-revealed', handleHintRevealed);
     socketService.socket.on('round-ended', handleRoundEnded);
     socketService.socket.on('game-ended', handleGameEnded);
@@ -145,7 +142,7 @@ const GameControls = ({ roomId, currentUser, users }) => {
       socketService.socket.off('round-started-guesser', handleRoundStartedGuesser);
       socketService.socket.off('word-selected', handleWordSelected);
       socketService.socket.off('correct-guess', handleCorrectGuess);
-      socketService.socket.off('leaderboard-update', handleLeaderboardUpdate);
+
       socketService.socket.off('hint-revealed', handleHintRevealed);
       socketService.socket.off('round-ended', handleRoundEnded);
       socketService.socket.off('game-ended', handleGameEnded);
@@ -197,37 +194,53 @@ const GameControls = ({ roomId, currentUser, users }) => {
   if (!gameState.isActive) {
     return (
       <div className="game-controls">
-        <div className="game-setup">
-          <h3>Game Settings</h3>
-          <div className="setting-group">
-            <label>
-              Number of Rounds:
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={settings.rounds}
-                onChange={(e) => setSettings({ ...settings, rounds: Number(e.target.value) })}
-              />
-            </label>
+        <button onClick={() => setShowSettingsModal(true)} className="start-game-btn">
+          ⚙️ Start Game
+        </button>
+
+        {/* Settings Modal */}
+        {showSettingsModal && (
+          <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Game Settings</h3>
+                <button className="modal-close" onClick={() => setShowSettingsModal(false)}>×</button>
+              </div>
+              <div className="modal-body">
+                <div className="setting-group">
+                  <label>
+                    Number of Rounds:
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={settings.rounds}
+                      onChange={(e) => setSettings({ ...settings, rounds: Number(e.target.value) })}
+                    />
+                  </label>
+                </div>
+                <div className="setting-group">
+                  <label>
+                    Draw Time (seconds):
+                    <input
+                      type="number"
+                      min="30"
+                      max="180"
+                      step="10"
+                      value={settings.drawTime}
+                      onChange={(e) => setSettings({ ...settings, drawTime: Number(e.target.value) })}
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button onClick={handleStartGame} className="modal-start-btn">
+                  Start Game
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="setting-group">
-            <label>
-              Draw Time (seconds):
-              <input
-                type="number"
-                min="30"
-                max="180"
-                step="10"
-                value={settings.drawTime}
-                onChange={(e) => setSettings({ ...settings, drawTime: Number(e.target.value) })}
-              />
-            </label>
-          </div>
-          <button onClick={handleStartGame} className="start-game-btn">
-            Start Game
-          </button>
-        </div>
+        )}
       </div>
     );
   }
@@ -278,19 +291,6 @@ const GameControls = ({ roomId, currentUser, users }) => {
               ))}
             </div>
           </div>
-        </div>
-      )}
-
-      {players.length > 0 && (
-        <div className="leaderboard-mini">
-          <h4>Scores</h4>
-          {players.map((player, index) => (
-            <div key={player.id} className="player-score">
-              <span className="rank">#{index + 1}</span>
-              <span className="player-name">{player.username}</span>
-              <span className="score">{player.score}</span>
-            </div>
-          ))}
         </div>
       )}
     </div>

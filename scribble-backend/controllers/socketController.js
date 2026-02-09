@@ -264,25 +264,24 @@ class SocketController {
 
       if (guessResult.correct) {
         // Emits to: All sockets in the room
-        // Sends: { player: Object, points: number, word: string }
+        // Sends: { player: Object, points: number, word: string, isFirst: boolean, guessOrder: number }
         socket.to(roomId).emit('correct-guess', {
           player: guessResult.player,
           points: guessResult.points,
-          word: null // Don't reveal word yet
+          word: null, // Don't reveal word yet
+          isFirst: guessResult.isFirst,
+          guessOrder: guessResult.guessOrder
         });
 
         socket.emit('correct-guess', {
           player: guessResult.player,
           points: guessResult.points,
-          word: game.currentWord
+          word: game.currentWord,
+          isFirst: guessResult.isFirst,
+          guessOrder: guessResult.guessOrder
         });
 
-        // Update leaderboard
-        const leaderboard = Game.getLeaderboard(roomId);
-        // Emits to: All sockets in the room
-        // Sends: { leaderboard: Array }
-        socket.to(roomId).emit('leaderboard-update', { leaderboard });
-        socket.emit('leaderboard-update', { leaderboard });
+
 
         // If all guessed, end round
         if (guessResult.allGuessed) {

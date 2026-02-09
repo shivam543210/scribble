@@ -226,7 +226,9 @@ class Game {
         correct: true,
         points: points,
         player: player,
-        allGuessed: allGuessed
+        allGuessed: allGuessed,
+        isFirst: guessOrder === 1,
+        guessOrder: guessOrder
       };
     }
 
@@ -347,23 +349,7 @@ class Game {
     return shuffled.slice(0, 3);
   }
 
-  /**
-   * Gets leaderboard
-   * @param {string} roomId - ID of the room
-   * @returns {Array} Sorted array of players with scores
-   */
-  getLeaderboard(roomId) {
-    const game = this.games.get(roomId);
-    if (!game) return [];
 
-    return [...game.players]
-      .sort((a, b) => b.score - a.score)
-      .map(p => ({
-        id: p.id,
-        username: p.username,
-        score: p.score
-      }));
-  }
 
   /**
    * Deletes game

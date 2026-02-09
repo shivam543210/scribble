@@ -189,46 +189,7 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-/* Leaderboard Mini */
-.leaderboard-mini {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 2px solid rgba(255, 255, 255, 0.3);
-}
 
-.leaderboard-mini h4 {
-  margin-bottom: 10px;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.player-score {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-
-.player-score .rank {
-  font-weight: bold;
-  margin-right: 10px;
-}
-
-.player-score .player-name {
-  flex: 1;
-}
-
-.player-score .score {
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 12px;
-  border-radius: 12px;
-}
 
 /* Canvas Disabled State */
 .drawing-canvas.disabled {

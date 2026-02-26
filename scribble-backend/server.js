@@ -5,6 +5,7 @@ const cors = require('cors');
 const apiRoutes = require('./routes/api');
 const initializeSocket = require('./config/socket');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { testConnection } = require('./config/db');
 
 // Initialize Express app
 const app = express();
@@ -52,10 +53,13 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   console.log(`CORS enabled for: ${process.env.CORS_ORIGIN}`);
+
+  // Test PostgreSQL connection
+  await testConnection();
 });
 
 // Graceful shutdown

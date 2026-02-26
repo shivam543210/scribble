@@ -187,12 +187,12 @@ function DrawingApp() {
   
   return (
     <div>
-      <button onClick={handleCreateRoom}>Create Room</button>
-      {/* Canvas and UI */}
-    </div>
-  );
-}
-*/
+//       <button onClick={handleCreateRoom}>Create Room</button>
+//       {/* Canvas and UI */
+//     </div>
+//   );
+// }
+// */
 
 export {
   socket,

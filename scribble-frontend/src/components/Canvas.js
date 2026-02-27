@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import socketService from '../utils/socket';
 
 // Predefined color palette
@@ -40,10 +40,12 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
   const [currentTool, setCurrentTool] = useState('draw');
   const [currentColor, setCurrentColor] = useState('#000000');
   const [lineWidth, setLineWidth] = useState(2);
-  const [points, setPoints] = useState([]);
+  const pointsRef = useRef([]);
   const [canDraw, setCanDraw] = useState(true);
-  const [drawingHistory, setDrawingHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  const historyRef = useRef([]);
+  const historyIndexRef = useRef(-1);
+  // State to force re-render when history changes (for undo/redo button disabled state)
+  const [historyVersion, setHistoryVersion] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -58,15 +60,11 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     ctx.lineJoin = 'round';
 
     // Render initial drawing data
-    // initialDrawingData: Array of { type: string, data: Object, userId: string, timestamp: number }
     if (initialDrawingData && initialDrawingData.length > 0) {
       initialDrawingData.forEach(event => {
         renderDrawing(ctx, event.data);
       });
     }
-
-    // Save initial state to history
-    saveCanvasState();
   }, [initialDrawingData]);
 
   useEffect(() => {
@@ -78,9 +76,87 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     }
   }, [isGameActive, isDrawer]);
 
+  /**
+   * Renders drawing on canvas
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {Object} drawingData - { type, points, color, lineWidth }
+   */
+  const renderDrawing = (ctx, drawingData) => {
+    const { type, points, color, lineWidth } = drawingData;
+
+    if (!points || points.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = type === 'erase' ? '#FFFFFF' : color;
+    ctx.lineWidth = type === 'erase' ? lineWidth * 3 : lineWidth;
+
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+  };
+
+  /**
+   * Saves drawing data to history for undo/redo
+   */
+  const saveHistory = useCallback((drawingData) => {
+    // Trim any future history (if we undid, then drew something new)
+    const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    newHistory.push(drawingData);
+    historyRef.current = newHistory;
+    historyIndexRef.current = newHistory.length - 1;
+    setHistoryVersion(v => v + 1); // trigger re-render for button states
+  }, []);
+
+  /**
+   * Redraws the entire canvas from history
+   */
+  const redrawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i <= historyIndexRef.current; i++) {
+      renderDrawing(ctx, historyRef.current[i]);
+    }
+  }, []);
+
+  /**
+   * Clears the canvas
+   */
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  /**
+   * Undo last drawing action
+   */
+  const undo = useCallback(() => {
+    if (historyIndexRef.current < 0) return;
+    historyIndexRef.current -= 1;
+    redrawCanvas();
+    setHistoryVersion(v => v + 1);
+  }, [redrawCanvas]);
+
+  /**
+   * Redo last undone action
+   */
+  const redo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    historyIndexRef.current += 1;
+    redrawCanvas();
+    setHistoryVersion(v => v + 1);
+  }, [redrawCanvas]);
+
+  // Keyboard shortcuts for undo/redo
   useEffect(() => {
-    // Keyboard shortcuts for undo/redo
     const handleKeyDown = (e) => {
+      if (!canDraw) return;
       if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -92,25 +168,24 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, drawingHistory]);
+  }, [undo, redo, canDraw]);
 
+  // Listen for drawing events from other users
   useEffect(() => {
-    // Listen for drawing events from other users
-    // Receives: { drawingData: { type: string, points: Array, color: string, lineWidth: number }, userId: string }
     const handleDrawing = (data) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       
       const ctx = canvas.getContext('2d');
       renderDrawing(ctx, data.drawingData);
-      saveCanvasState();
+      saveHistory(data.drawingData);
     };
 
-    // Listen for canvas clear events
-    // Receives: No data
     const handleCanvasCleared = () => {
       clearCanvas();
-      saveCanvasState();
+      historyRef.current = [];
+      historyIndexRef.current = -1;
+      setHistoryVersion(v => v + 1);
     };
 
     socketService.onDrawing(handleDrawing);
@@ -120,33 +195,10 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
       socketService.off('drawing', handleDrawing);
       socketService.off('canvas-cleared', handleCanvasCleared);
     };
-  }, []);
-
-  /**
-   * Renders drawing on canvas
-   * @param {CanvasRenderingContext2D} ctx - Canvas context with methods { beginPath, moveTo, lineTo, stroke, strokeStyle, lineWidth }
-   * @param {Object} drawingData - { type: 'draw'|'erase', points: Array<{x: number, y: number}>, color: string, lineWidth: number }
-   */
-  const renderDrawing = (ctx, drawingData) => {
-    const { type, points, color, lineWidth } = drawingData;
-
-    if (points.length < 2) return;
-
-    ctx.beginPath();
-    ctx.strokeStyle = type === 'erase' ? '#FFFFFF' : color;
-    ctx.lineWidth = type === 'erase' ? lineWidth * 3 : lineWidth;
-
-    // points: Array of { x: number, y: number }
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.stroke();
-  };
+  }, [saveHistory, clearCanvas]);
 
   /**
    * Handles mouse down event
-   * @param {MouseEvent} e - Mouse event with properties { clientX: number, clientY: number }
    */
   const startDrawing = (e) => {
     if (!canDraw) {
@@ -161,12 +213,11 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    setPoints([{ x, y }]);
+    pointsRef.current = [{ x, y }];
   };
 
   /**
    * Handles mouse move event
-   * @param {MouseEvent} e - Mouse event with properties { clientX: number, clientY: number }
    */
   const draw = (e) => {
     if (!isDrawing || !canDraw) return;
@@ -176,49 +227,39 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setPoints(prevPoints => {
-      const newPoints = [...prevPoints, { x, y }];
-      
-      const ctx = canvas.getContext('2d');
-      const drawingData = {
-        type: currentTool,
-        points: newPoints,
-        color: currentColor,
-        lineWidth: lineWidth
-      };
-      renderDrawing(ctx, drawingData);
-
-      return newPoints;
+    pointsRef.current.push({ x, y });
+    const ctx = canvas.getContext('2d');
+    renderDrawing(ctx, {
+      type: currentTool,
+      points: pointsRef.current,
+      color: currentColor,
+      lineWidth: lineWidth
     });
   };
 
   /**
-   * Handles mouse up event
-   * Sends drawing data to server
+   * Handles mouse up event — sends drawing data to server
    */
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    if (points.length > 1 && canDraw) {
-      // Send drawing data to server
-      // Emits: 'drawing' with { roomId: string, drawingData: Object }
+    if (pointsRef.current.length > 1 && canDraw) {
       const drawingData = {
         type: currentTool,
-        points: points,
+        points: [...pointsRef.current], // copy so ref reset doesn't affect it
         color: currentColor,
         lineWidth: lineWidth
       };
       socketService.sendDrawing(roomId, drawingData);
-      saveCanvasState();
+      saveHistory(drawingData);
     }
 
-    setPoints([]);
+    pointsRef.current = [];
   };
 
   /**
    * Handles touch start event
-   * @param {TouchEvent} e - Touch event with properties { touches: Array }
    */
   const handleTouchStart = (e) => {
     e.preventDefault();
@@ -230,12 +271,11 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
     setIsDrawing(true);
-    setPoints([{ x, y }]);
+    pointsRef.current = [{ x, y }];
   };
 
   /**
    * Handles touch move event
-   * @param {TouchEvent} e - Touch event with properties { touches: Array }
    */
   const handleTouchMove = (e) => {
     e.preventDefault();
@@ -247,19 +287,13 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
 
-    setPoints(prevPoints => {
-      const newPoints = [...prevPoints, { x, y }];
-      
-      const ctx = canvas.getContext('2d');
-      const drawingData = {
-        type: currentTool,
-        points: newPoints,
-        color: currentColor,
-        lineWidth: lineWidth
-      };
-      renderDrawing(ctx, drawingData);
-
-      return newPoints;
+    pointsRef.current.push({ x, y });
+    const ctx = canvas.getContext('2d');
+    renderDrawing(ctx, {
+      type: currentTool,
+      points: pointsRef.current,
+      color: currentColor,
+      lineWidth: lineWidth
     });
   };
 
@@ -272,78 +306,7 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
   };
 
   /**
-   * Saves current canvas state to history
-   */
-  const saveCanvasState = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const imageData = canvas.toDataURL();
-    setDrawingHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(imageData);
-      // Keep only last 20 states to prevent memory issues
-      if (newHistory.length > 20) {
-        newHistory.shift();
-        return newHistory;
-      }
-      return newHistory;
-    });
-    setHistoryIndex(prev => Math.min(prev + 1, 19));
-  };
-
-  /**
-   * Undo last drawing action
-   */
-  const undo = () => {
-    if (historyIndex <= 0 || !canDraw) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = drawingHistory[historyIndex - 1];
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
-    setHistoryIndex(prev => prev - 1);
-  };
-
-  /**
-   * Redo last undone action
-   */
-  const redo = () => {
-    if (historyIndex >= drawingHistory.length - 1 || !canDraw) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = drawingHistory[historyIndex + 1];
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
-    setHistoryIndex(prev => prev + 1);
-  };
-
-  /**
-   * Clears the canvas
-   */
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  /**
-   * Handles clear button click
-   * Sends clear command to server
+   * Handles clear button click — sends clear command to server
    */
   const handleClear = () => {
     if (isGameActive && !isDrawer) {
@@ -352,10 +315,15 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
     }
 
     clearCanvas();
-    saveCanvasState();
-    // Emits: 'clear-canvas' with { roomId: string }
+    historyRef.current = [];
+    historyIndexRef.current = -1;
+    setHistoryVersion(v => v + 1);
     socketService.clearCanvas(roomId);
   };
+
+  // Derived state for button disabled checks
+  const canUndo = canDraw && historyIndexRef.current >= 0;
+  const canRedo = canDraw && historyIndexRef.current < historyRef.current.length - 1;
 
   return (
     <div className="canvas-container">
@@ -450,7 +418,7 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
         {/* Undo/Redo */}
         <button
           onClick={undo}
-          disabled={!canDraw || historyIndex <= 0}
+          disabled={!canUndo}
           className="undo-btn"
           title="Undo (Ctrl+Z)"
         >
@@ -458,7 +426,7 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
         </button>
         <button
           onClick={redo}
-          disabled={!canDraw || historyIndex >= drawingHistory.length - 1}
+          disabled={!canRedo}
           className="redo-btn"
           title="Redo (Ctrl+Y)"
         >

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 /**
  * Home component - Landing page for creating or joining rooms
@@ -12,13 +11,8 @@ const Home = ({ onCreateRoom, onJoinRoom }) => {
   const [username, setUsername] = useState('');
   const [roomName, setRoomName] = useState('');
   const [roomId, setRoomId] = useState('');
-  const [mode, setMode] = useState('create'); // 'create' or 'join'
-  const navigate = useNavigate();
+  const [mode, setMode] = useState('create');
 
-  /**
-   * Handles create room form submit
-   * @param {Event} e - Form submit event
-   */
   const handleCreateRoom = (e) => {
     e.preventDefault();
     
@@ -27,15 +21,9 @@ const Home = ({ onCreateRoom, onJoinRoom }) => {
       return;
     }
 
-    // Call parent function to create room
-    // Function expects: (roomName: string, username: string)
     onCreateRoom(roomName, username);
   };
 
-  /**
-   * Handles join room form submit
-   * @param {Event} e - Form submit event
-   */
   const handleJoinRoom = (e) => {
     e.preventDefault();
     
@@ -44,16 +32,38 @@ const Home = ({ onCreateRoom, onJoinRoom }) => {
       return;
     }
 
-    // Call parent function to join room
-    // Function expects: (roomId: string, username: string)
     onJoinRoom(roomId, username);
   };
 
   return (
     <div className="home">
+      {/* Decorative floating shapes */}
+      <div style={{
+        position: 'absolute', top: '10%', left: '10%',
+        width: '80px', height: '80px', borderRadius: '50%',
+        background: 'rgba(102,126,234,0.15)', animation: 'float 6s ease-in-out infinite'
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '15%', right: '15%',
+        width: '120px', height: '120px', borderRadius: '20px',
+        background: 'rgba(118,75,162,0.12)', animation: 'float 8s ease-in-out infinite',
+        transform: 'rotate(45deg)'
+      }} />
+      <div style={{
+        position: 'absolute', top: '50%', right: '8%',
+        width: '50px', height: '50px', borderRadius: '50%',
+        background: 'rgba(34,197,94,0.12)', animation: 'float 5s ease-in-out infinite reverse'
+      }} />
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+      `}</style>
+
       <div className="home-container">
         <h1>🎨 Scribble</h1>
-        <p className="subtitle">Collaborative Drawing in Real-time</p>
+        <p className="subtitle">Draw, Guess & Have Fun!</p>
 
         <div className="mode-selector">
           <button
@@ -121,7 +131,7 @@ const Home = ({ onCreateRoom, onJoinRoom }) => {
             <li>Create a room or join an existing one</li>
             <li>Share the Room ID with friends</li>
             <li>Draw together in real-time</li>
-            <li>Chat while you draw</li>
+            <li>Guess words and earn points!</li>
           </ul>
         </div>
       </div>

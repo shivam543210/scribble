@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import socketService from '../utils/socket';
 
 /**
- * Chat component for room messaging (Updated with game mode)
+ * Chat component for room messaging (Redesigned)
  * Props: { 
  *   roomId: string,
  *   currentUser: { id: string, username: string, color: string },
- *   isGameActive: boolean
+ *   isGameActive: boolean,
+ *   users: Array
  * }
  */
 const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
@@ -19,20 +20,16 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    // Listen for chat messages
-    // Receives: { user: { id: string, username: string, color: string }, message: string, timestamp: number, isGuess: boolean }
     const handleChatMessage = (data) => {
       setMessages(prev => [...prev, data]);
     };
 
-    // Listen for correct guesses
-    // Receives: { player: Object, points: number, word: string|null, isFirst: boolean, guessOrder: number }
     const handleCorrectGuess = (data) => {
       const guessMessage = {
-        user: { ...data.player, color: '#4CAF50' },
+        user: { ...data.player, color: '#22c55e' },
         message: data.word 
-          ? `You guessed correctly! +${data.points} points ${data.isFirst ? '🥇 First!' : ''}(Word: ${data.word})`
-          : `${data.player.username} guessed correctly! +${data.points} points ${data.isFirst ? '🥇 First!' : ''}`,
+          ? `You guessed the word! 😎`
+          : `${data.player.username} guess the word! 😎`,
         timestamp: Date.now(),
         isSystemMessage: true,
         isCorrectGuess: true,
@@ -41,8 +38,6 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
       setMessages(prev => [...prev, guessMessage]);
     };
 
-    // Listen for round ended
-    // Receives: { word: string, scores: Array }
     const handleRoundEnded = (data) => {
       const roundEndMessage = {
         user: { username: 'System', color: '#2196F3' },
@@ -53,8 +48,6 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
       setMessages(prev => [...prev, roundEndMessage]);
     };
 
-    // Listen for game ended
-    // Receives: { winner: Object, scores: Array }
     const handleGameEnded = (data) => {
       const gameEndMessage = {
         user: { username: 'System', color: '#2196F3' },
@@ -79,18 +72,13 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
   }, []);
 
   useEffect(() => {
-    // Auto scroll to bottom when new message arrives
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /**
-   * Handles input change and autocomplete
-   */
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInputMessage(value);
 
-    // Check for @ mention
     const lastAtIndex = value.lastIndexOf('@');
     if (lastAtIndex !== -1) {
       const searchTerm = value.slice(lastAtIndex + 1).toLowerCase();
@@ -110,9 +98,6 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
     }
   };
 
-  /**
-   * Handles autocomplete selection
-   */
   const selectAutocomplete = (username) => {
     const lastAtIndex = inputMessage.lastIndexOf('@');
     const newMessage = inputMessage.slice(0, lastAtIndex) + '@' + username + ' ';
@@ -121,9 +106,6 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
     inputRef.current?.focus();
   };
 
-  /**
-   * Handles keyboard navigation in autocomplete
-   */
   const handleKeyDown = (e) => {
     if (!showAutocomplete) return;
 
@@ -143,58 +125,31 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
     }
   };
 
-  /**
-   * Handles form submit
-   * @param {Event} e - Form submit event with method preventDefault()
-   */
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     if (!inputMessage.trim()) return;
-
-    // Send message to server (will be treated as guess if game is active)
-    // Emits: 'chat-message' with { roomId: string, message: string }
     socketService.sendChatMessage(roomId, inputMessage);
     setInputMessage('');
     setShowAutocomplete(false);
   };
 
-  /**
-   * Formats timestamp to readable time
-   * @param {number} timestamp - Unix timestamp
-   * @returns {string} Formatted time
-   */
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
   return (
     <div className="chat">
-      <h3>{isGameActive ? 'Chat & Guesses' : 'Chat'}</h3>
       <div className="chat-messages">
         {messages.map((msg, index) => (
           <div 
             key={index} 
             className={`message ${msg.user.id === currentUser?.id ? 'own-message' : ''} ${msg.isSystemMessage ? 'system-message' : ''} ${msg.isCorrectGuess ? 'correct-guess-message' : ''} ${msg.isGuess ? 'guess-message' : ''}`}
           >
-            <div className="message-header">
-              <span 
-                className="message-username" 
-                style={{ color: msg.user.color }}
-              >
-                {msg.user.username}
-                {msg.isGuess && !msg.isSystemMessage && ' 🤔'}
-                {msg.isCorrectGuess && ' ✅'}
-              </span>
-              <span className="message-time">
-                {formatTime(msg.timestamp)}
-              </span>
-            </div>
-            <div className="message-text">{msg.message}</div>
+            <span 
+              className="message-username" 
+              style={{ color: msg.isCorrectGuess ? '#22c55e' : (msg.user.color || '#333') }}
+            >
+              {msg.isCorrectGuess ? '' : `${msg.user.username}: `}
+            </span>
+            <span className="message-text" style={msg.isCorrectGuess ? { color: '#22c55e' } : {}}>
+              {msg.isCorrectGuess ? msg.message : msg.message}
+            </span>
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -220,11 +175,11 @@ const Chat = ({ roomId, currentUser, isGameActive = false, users = [] }) => {
           value={inputMessage}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder={isGameActive ? "Type your guess or @mention..." : "Type a message or @mention..."}
+          placeholder={isGameActive ? "Type your guess here..." : "Type a message..."}
           className="chat-input"
         />
         <button type="submit" className="chat-send-btn">
-          {isGameActive ? '🎯 Guess' : 'Send'}
+          →
         </button>
       </form>
     </div>

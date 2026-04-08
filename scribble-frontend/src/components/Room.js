@@ -7,7 +7,7 @@ import GameControls from './GameControls';
 import socketService from '../utils/socket';
 
 /**
- * Room component - Main drawing interface (Quick Draw theme)
+ * Room component - Main drawing interface (Quick Draw theme with image overlays)
  */
 const Room = ({ roomId, roomName, currentUser, users }) => {
   const [drawingData, setDrawingData] = useState([]);
@@ -25,7 +25,8 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
 
   // Game event overlay state
   const [gameEvent, setGameEvent] = useState(null);
-  // Possible events: { type: 'game-started' | 'round-ended' | 'game-ended', data: {} }
+  // Show "How to Play" on first visit
+  const [showGuide, setShowGuide] = useState(false);
 
   const navigate = useNavigate();
 
@@ -46,16 +47,16 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
         type: 'game-started',
         data: { rounds: data.rounds, drawTime: data.drawTime }
       });
-      // Auto-dismiss after 3s
-      setTimeout(() => setGameEvent(null), 3000);
     };
 
     const handleGameEnded = (data) => {
       setIsGameActive(false);
       setIsDrawer(false);
       setGameState(prev => ({ ...prev, isRoundActive: false, maskedWord: '', selectedWord: '' }));
+      
+      const hasWinner = data.winner && data.winner.score > 0;
       setGameEvent({
-        type: 'game-ended',
+        type: hasWinner ? 'winner' : 'no-winner',
         data: { winner: data.winner, scores: data.scores }
       });
     };
@@ -71,7 +72,7 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
         maskedWord: '',
         selectedWord: ''
       }));
-      setGameEvent(null); // clear previous event
+      setGameEvent(null);
     };
 
     const handleRoundStartedGuesser = (data) => {
@@ -107,8 +108,6 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
         type: 'round-ended',
         data: { word: data.word, scores: data.scores }
       });
-      // Auto-dismiss after 4s
-      setTimeout(() => setGameEvent(null), 4000);
     };
 
     socketService.onRoomJoined(handleRoomJoined);
@@ -152,7 +151,7 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
   };
 
   /**
-   * Renders the game event overlay (Quick Draw themed)
+   * Renders game event overlays using the themed images
    */
   const renderGameEvent = () => {
     if (!gameEvent) return null;
@@ -160,78 +159,104 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
     switch (gameEvent.type) {
       case 'game-started':
         return (
-          <div className="game-event-overlay" onClick={() => setGameEvent(null)}>
-            <div className="game-event-card" onClick={(e) => e.stopPropagation()}>
-              <div className="event-emojis">🎨 ✏️ 🖌️</div>
-              <div className="event-ribbon large">Let's Play!</div>
-              <p className="event-subtitle">
-                Get ready to draw and guess!<br/>
-                {gameEvent.data.rounds} rounds • {gameEvent.data.drawTime}s per round
-              </p>
-              <button className="event-dismiss-btn" onClick={() => setGameEvent(null)}>
-                Let's Go!
-              </button>
+          <div className="event-overlay" onClick={() => setGameEvent(null)}>
+            <div className="event-image-container event-bounce-in">
+              <img 
+                src="/front-page.png" 
+                alt="Let's Play Quick Draw!" 
+                className="event-hero-image char-bounce"
+              />
+              <div className="event-overlay-content">
+                <p className="event-info-text">
+                  {gameEvent.data.rounds} rounds • {gameEvent.data.drawTime}s each
+                </p>
+                <button className="event-action-btn" onClick={() => setGameEvent(null)}>
+                  Let's Go! 🎨
+                </button>
+              </div>
             </div>
           </div>
         );
 
       case 'round-ended':
         return (
-          <div className="game-event-overlay" onClick={() => setGameEvent(null)}>
-            <div className="game-event-card" onClick={(e) => e.stopPropagation()}>
-              <div className="event-ribbon">Round Over!</div>
-              <p className="event-subtitle">The word was:</p>
-              <div className="event-word">{gameEvent.data.word}</div>
-              {gameEvent.data.scores && gameEvent.data.scores.length > 0 && (
-                <div className="event-scores">
-                  {gameEvent.data.scores.slice(0, 5).map((player, i) => (
-                    <div key={player.id || i} className="event-score-item">
-                      <span className="event-score-rank">#{i + 1}</span>
-                      <span className="event-score-name">{player.username}</span>
-                      <span className="event-score-points">{player.score || 0} pts</span>
-                    </div>
-                  ))}
+          <div className="event-overlay" onClick={() => setGameEvent(null)}>
+            <div className="event-image-container event-bounce-in">
+              <img 
+                src="/guide.png" 
+                alt="Round Over!" 
+                className="event-hero-image char-wiggle"
+              />
+              <div className="event-overlay-content">
+                <div className="event-word-reveal">
+                  The word was: <strong>{gameEvent.data.word}</strong>
                 </div>
-              )}
-              <button className="event-dismiss-btn" onClick={() => setGameEvent(null)}>
-                Next Round →
-              </button>
+                {gameEvent.data.scores && gameEvent.data.scores.length > 0 && (
+                  <div className="event-scores-list">
+                    {gameEvent.data.scores.slice(0, 5).map((player, i) => (
+                      <div key={player.id || i} className="event-score-row">
+                        <span className="event-rank">#{i + 1}</span>
+                        <span className="event-name">{player.username}</span>
+                        <span className="event-pts">{player.score || 0} pts</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button className="event-action-btn" onClick={() => setGameEvent(null)}>
+                  Next Round →
+                </button>
+              </div>
             </div>
           </div>
         );
 
-      case 'game-ended':
-        const winner = gameEvent.data.winner;
-        const hasWinner = winner && winner.score > 0;
+      case 'winner':
         return (
-          <div className="game-event-overlay" onClick={() => setGameEvent(null)}>
-            <div className="game-event-card" onClick={(e) => e.stopPropagation()}>
-              <div className="event-emojis">🏆 🎉 🥇</div>
-              <div className={`event-ribbon large ${hasWinner ? 'winner' : 'no-winner'}`}>
-                {hasWinner ? 'Winner!' : 'No Winner!'}
-              </div>
-              {hasWinner ? (
-                <>
-                  <div className="event-winner-name">{winner.username}</div>
-                  <p className="event-subtitle">{winner.score} points</p>
-                </>
-              ) : (
-                <p className="event-subtitle">Better luck next time!</p>
-              )}
-              {gameEvent.data.scores && gameEvent.data.scores.length > 0 && (
-                <div className="event-scores">
-                  {gameEvent.data.scores.map((player, i) => (
-                    <div key={player.id || i} className="event-score-item">
-                      <span className="event-score-rank">#{i + 1}</span>
-                      <span className="event-score-name">{player.username}</span>
-                      <span className="event-score-points">{player.score || 0} pts</span>
-                    </div>
-                  ))}
+          <div className="event-overlay" onClick={() => setGameEvent(null)}>
+            <div className="event-image-container event-bounce-in">
+              <img 
+                src="/winner.png" 
+                alt="Winner!" 
+                className="event-hero-image char-celebrate"
+              />
+              <div className="event-overlay-content">
+                <div className="event-winner-text">
+                  🏆 {gameEvent.data.winner.username} wins with {gameEvent.data.winner.score} points!
                 </div>
-              )}
-              <button className="event-dismiss-btn" onClick={() => setGameEvent(null)}>
-                Play Again
-              </button>
+                {gameEvent.data.scores && (
+                  <div className="event-scores-list">
+                    {gameEvent.data.scores.map((player, i) => (
+                      <div key={player.id || i} className="event-score-row">
+                        <span className="event-rank">#{i + 1}</span>
+                        <span className="event-name">{player.username}</span>
+                        <span className="event-pts">{player.score || 0} pts</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button className="event-action-btn" onClick={() => setGameEvent(null)}>
+                  Play Again! 🎮
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'no-winner':
+        return (
+          <div className="event-overlay" onClick={() => setGameEvent(null)}>
+            <div className="event-image-container event-bounce-in">
+              <img 
+                src="/draw-match.png" 
+                alt="No Winner!" 
+                className="event-hero-image char-sad"
+              />
+              <div className="event-overlay-content">
+                <p className="event-info-text">Better luck next time!</p>
+                <button className="event-action-btn" onClick={() => setGameEvent(null)}>
+                  Try Again! 💪
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -241,13 +266,35 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
     }
   };
 
+  /**
+   * Guide overlay
+   */
+  const renderGuide = () => {
+    if (!showGuide) return null;
+    return (
+      <div className="event-overlay" onClick={() => setShowGuide(false)}>
+        <div className="event-image-container event-bounce-in">
+          <img 
+            src="/guide.png" 
+            alt="How to Play" 
+            className="event-hero-image char-wiggle"
+          />
+          <div className="event-overlay-content">
+            <button className="event-action-btn" onClick={() => setShowGuide(false)}>
+              Got it! ✨
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="room">
       <div className="room-content">
         <div className="main-area">
           {/* Left: Canvas Area */}
           <div className="canvas-area">
-            {/* Canvas Header: Word hint + Round + Timer */}
             {isGameActive && gameState.isRoundActive && (
               <div className="canvas-header">
                 <div className="canvas-header-left">
@@ -304,14 +351,23 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
               />
             </div>
 
-            {/* Game Controls — Start button (only if game not active) */}
+            {/* Game Controls */}
             {!isGameActive && (
               <div className="game-panel-controls">
-                <GameControls
-                  roomId={roomId}
-                  currentUser={currentUser}
-                  users={users}
-                />
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                  <GameControls
+                    roomId={roomId}
+                    currentUser={currentUser}
+                    users={users}
+                  />
+                  <button 
+                    className="guide-btn" 
+                    onClick={() => setShowGuide(true)}
+                    title="How to Play"
+                  >
+                    ❓ How to Play
+                  </button>
+                </div>
               </div>
             )}
 
@@ -335,8 +391,9 @@ const Room = ({ roomId, roomName, currentUser, users }) => {
         </div>
       </div>
 
-      {/* Game Event Overlay — Quick Draw Themed */}
+      {/* Game Event Overlays — Using themed images */}
       {renderGameEvent()}
+      {renderGuide()}
     </div>
   );
 };

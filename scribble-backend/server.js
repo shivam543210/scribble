@@ -10,6 +10,10 @@ const { testConnection } = require('./config/db');
 // Initialize Express app
 const app = express();
 
+// Set up Swagger UI
+const setupSwagger = require('./config/swagger');
+setupSwagger(app);
+
 // Create HTTP server
 // Required for Socket.IO to attach to
 const server = http.createServer(app);

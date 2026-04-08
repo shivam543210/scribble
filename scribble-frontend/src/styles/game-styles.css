@@ -748,3 +748,308 @@
   content: "✏️";
   margin-left: auto;
 }
+
+/* ================================================================
+   IMAGE-BASED EVENT OVERLAYS
+   ================================================================ */
+.event-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: overlayFadeIn 0.3s ease;
+  cursor: pointer;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.event-image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 700px;
+  width: 92%;
+  cursor: default;
+}
+
+/* Bounce In animation */
+.event-bounce-in {
+  animation: eventBounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes eventBounceIn {
+  0% { transform: scale(0.3) translateY(60px); opacity: 0; }
+  50% { transform: scale(1.05) translateY(-10px); opacity: 1; }
+  70% { transform: scale(0.95) translateY(4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* Hero Image */
+.event-hero-image {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
+}
+
+/* ================================================================
+   CHARACTER ANIMATIONS — Applied to event images
+   ================================================================ */
+
+/* Gentle bounce (game start) */
+.char-bounce {
+  animation: charBounce 2s ease-in-out infinite;
+}
+
+@keyframes charBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-8px) rotate(-1deg); }
+  50% { transform: translateY(-14px) rotate(0deg); }
+  75% { transform: translateY(-8px) rotate(1deg); }
+}
+
+/* Playful wiggle (guide / round end) */
+.char-wiggle {
+  animation: charWiggle 1.5s ease-in-out infinite;
+}
+
+@keyframes charWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-2deg) scale(1.01); }
+  30% { transform: rotate(2deg) scale(1.02); }
+  45% { transform: rotate(-1deg) scale(1.01); }
+  60% { transform: rotate(1deg) scale(1); }
+}
+
+/* Winner celebration */
+.char-celebrate {
+  animation: charCelebrate 1.2s ease-in-out infinite;
+}
+
+@keyframes charCelebrate {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  10% { transform: scale(1.03) rotate(-3deg); }
+  20% { transform: scale(1.05) rotate(3deg); }
+  30% { transform: scale(1.03) rotate(-2deg); }
+  40% { transform: scale(1.05) rotate(2deg); }
+  50% { transform: scale(1) rotate(0deg); }
+}
+
+/* Sad sway (no winner) */
+.char-sad {
+  animation: charSad 3s ease-in-out infinite;
+}
+
+@keyframes charSad {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-5px) rotate(-1deg); }
+  75% { transform: translateX(5px) rotate(1deg); }
+}
+
+/* ================================================================
+   EVENT OVERLAY CONTENT
+   ================================================================ */
+.event-overlay-content {
+  background: white;
+  border: 3px solid var(--border-color);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 20px 28px 24px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  margin-top: -4px;
+}
+
+.event-info-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.event-word-reveal {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  background: #fff8e1;
+  border: 2px solid #ffcc02;
+  border-radius: var(--radius-md);
+}
+
+.event-word-reveal strong {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.event-winner-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.event-scores-list {
+  margin: 12px 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.event-score-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.event-score-row:last-child {
+  border-bottom: none;
+}
+
+.event-rank {
+  font-weight: 800;
+  font-size: 16px;
+  font-family: var(--font-display);
+  min-width: 36px;
+  color: var(--text-primary);
+}
+
+.event-name {
+  flex: 1;
+  text-align: left;
+}
+
+.event-pts {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.event-action-btn {
+  margin-top: 12px;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #ffcc02 0%, #ff9500 100%);
+  color: #1a1a1a;
+  border: 3px solid #e68a00;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0 #cc7a00;
+  text-transform: uppercase;
+}
+
+.event-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 6px 0 #cc7a00;
+  background: linear-gradient(135deg, #ffdd33 0%, #ffaa22 100%);
+}
+
+.event-action-btn:active {
+  transform: translateY(2px);
+  box-shadow: 1px 1px 0 #cc7a00;
+}
+
+/* ================================================================
+   GUIDE / HOW TO PLAY BUTTON
+   ================================================================ */
+.guide-btn {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+  color: white;
+  border: 3px solid #0288d1;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 3px 3px 0 #0277bd;
+  white-space: nowrap;
+}
+
+.guide-btn:hover {
+  background: linear-gradient(135deg, #29b6f6 0%, #0288d1 100%);
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 #0277bd;
+}
+
+/* ================================================================
+   HOME PAGE — Character Animations
+   ================================================================ */
+.home-mascot {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-mascot-left {
+  left: 3%;
+  bottom: 10%;
+  width: 140px;
+  animation: mascotFloat 4s ease-in-out infinite;
+}
+
+.home-mascot-right {
+  right: 3%;
+  top: 12%;
+  width: 130px;
+  animation: mascotFloat 5s ease-in-out infinite reverse;
+}
+
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
+}
+
+/* ================================================================
+   RESPONSIVE — Event Overlays
+   ================================================================ */
+@media (max-width: 768px) {
+  .event-image-container {
+    width: 95%;
+  }
+
+  .event-hero-image {
+    max-height: 280px;
+  }
+
+  .event-overlay-content {
+    padding: 16px 20px;
+  }
+
+  .event-action-btn {
+    font-size: 15px;
+    padding: 12px 28px;
+  }
+
+  .event-word-reveal strong {
+    font-size: 20px;
+  }
+
+  .guide-btn {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+}

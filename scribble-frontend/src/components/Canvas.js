@@ -134,6 +134,33 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
   }, []);
 
   /**
+   * Downloads the current canvas as an image
+   */
+  const handleDownload = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Create a temporary canvas to draw the white background and the drawing
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Fill with white background
+    tempCtx.fillStyle = '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Draw original canvas on top
+    tempCtx.drawImage(canvas, 0, 0);
+
+    const dataUrl = tempCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `scribble-drawing-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
+  }, []);
+
+  /**
    * Undo last drawing action
    */
   const undo = useCallback(() => {
@@ -440,6 +467,14 @@ const Canvas = ({ roomId, currentUser, initialDrawingData = [], isDrawer = false
           title="Clear Canvas"
         >
           🗑️ Clear All
+        </button>
+
+        <button 
+          onClick={handleDownload} 
+          className="download-btn"
+          title="Download Drawing"
+        >
+          💾 Download
         </button>
 
         {isGameActive && !canDraw && (

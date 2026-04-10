@@ -80,6 +80,72 @@ npm start
 6.  **Guessers**: Type your guess in the chat box. Correct guesses turn green!
 7.  The player with the most points after all rounds wins!
 
+## 🏛️ System Architecture
+
+### High-Level Design (HLD)
+
+Scribble uses a classic Client-Server Architecture optimized for real-time bidirectional communication.
+
+```mermaid
+graph TD
+    Client1[Player 1 / Drawer - React App] <-->|WebSocket/Socket.io| LB[Node.js + Express Backend]
+    Client2[Player 2 / Guesser - React App] <-->|WebSocket/Socket.io| LB
+    Client3[Player 3 / Guesser - React App] <-->|WebSocket/Socket.io| LB
+    
+    LB <-->|Read/Write| DB[(PostgreSQL Database)]
+    LB <--> State[In-Memory Game State]
+```
+
+- **Frontend (Client):** Developed in React. Handles rendering the drawing canvas, real-time chat, and game UI. Establishes a persistent full-duplex WebSocket connection via Socket.io.
+- **Backend (Server):** Node.js and Express server that serves API endpoints and hosts the Socket.io server. It acts as the central hub, receiving drawing events from the active drawer and broadcasting them to all other clients in the same room.
+- **State Management:** Time-critical data like current drawer, stroke coordinates, and timer are maintained in-memory on the backend for minimal latency.
+- **Database:** PostgreSQL is used for persisting user records, historical scores, and room metadata.
+
+### Low-Level Design (LLD)
+
+#### Core Components & Flow
+
+1.  **Connection & Room Management**
+    - `socketManager`: Listens for `join_room` events, maps Socket IDs to users, and manages Socket.io rooms.
+    - When a user joins, they are added to a `Room` object in the backend's in-memory state.
+2.  **Drawing Synchronization Pipeline**
+    - The `Canvas` component captures `onMouseMove` events.
+    - Emits a `draw_stroke` event containing `(x, y, color, size)` to the backend.
+    - The backend selectively broadcasts this event to `room.clients` (excluding the sender).
+    - Receiving clients parse the stroke data and update their HTML5 `<canvas>`.
+3.  **Game Loop & Scoring Engine**
+    - A server-side game loop ticks every second, broadcasting `time_update` events.
+    - When the Drawer selects a word, it's stored in the server's `GameState`.
+    - Users submit guesses via the `Chat` component (`chat_message` event).
+    - The backend intercepts the message. If it matches the hidden word:
+      - The user is awarded points based on the remaining time.
+      - A `player_guessed_correctly` event is broadcasted.
+    - If it does not match, a standard `new_chat_message` is broadcasted.
+
+```mermaid
+sequenceDiagram
+    participant Drawer (Client)
+    participant Server
+    participant Guesser (Client)
+    
+    Drawer (Client)->>Server: join_room(room1, id)
+    Guesser (Client)->>Server: join_room(room1, id)
+    Server-->>Drawer (Client): game_start(drawer: true)
+    
+    Drawer (Client)->>Server: draw_event({x, y, color})
+    Server->>Guesser (Client): broadcast_draw_event({x, y, color})
+    
+    Guesser (Client)->>Server: guess_word("Apple")
+    alt is correct guess
+        Server->>Server: Calculate points
+        Server->>Drawer (Client): player_guessed("user", points)
+        Server->>Guesser (Client): correct_guess_ack(points)
+    else is incorrect guess
+        Server->>Drawer (Client): chat_message("Apple")
+        Server->>Guesser (Client): chat_message("Apple")
+    end
+```
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please fork the repository and create a pull request.

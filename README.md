@@ -83,6 +83,23 @@ npm start
 ## 🏛️ System Architecture
 
 ### High-Level Design (HLD)
+graph TD
+
+    Users[Clients (React App)]
+    
+    Users -->|WebSocket| LB[Load Balancer (NGINX)]
+
+    LB --> S1[Socket Server 1 (Node.js)]
+    LB --> S2[Socket Server 2 (Node.js)]
+    LB --> S3[Socket Server N (Node.js)]
+
+    S1 -->|Pub/Sub| R[(Redis)]
+    S2 -->|Pub/Sub| R
+    S3 -->|Pub/Sub| R
+
+    S1 --> DB[(PostgreSQL)]
+    S2 --> DB
+    S3 --> DB
 
 Scribble uses a classic Client-Server Architecture optimized for real-time bidirectional communication.
 

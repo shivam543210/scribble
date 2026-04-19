@@ -1,16 +1,16 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: scribble-postgres
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: scribble_user
       POSTGRES_PASSWORD: scribble_pass
       POSTGRES_DB: scribble_db
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scribble-backend/config/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -19,6 +19,61 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: scribble-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  server1:
+    build: ./scribble-backend
+    container_name: scribble-server-1
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://scribble_user:scribble_pass@postgres:5432/scribble_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  server2:
+    build: ./scribble-backend
+    container_name: scribble-server-2
+    restart: unless-stopped
+    ports:
+      - "5002:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://scribble_user:scribble_pass@postgres:5432/scribble_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  server3:
+    build: ./scribble-backend
+    container_name: scribble-server-3
+    restart: unless-stopped
+    ports:
+      - "5003:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://scribble_user:scribble_pass@postgres:5432/scribble_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
   pgdata:

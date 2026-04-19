@@ -1,4 +1,6 @@
 const socketIO = require('socket.io');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { pubClient, subClient } = require('./redis');
 const socketController = require('../controllers/socketController');
 
 /**
@@ -15,6 +17,9 @@ const initializeSocket = (server) => {
       methods: ['GET', 'POST']
     }
   });
+
+  // Use Redis adapter for multi-instance scaling
+  io.adapter(createAdapter(pubClient, subClient));
 
   /**
    * Connection event handler

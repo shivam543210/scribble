@@ -69,8 +69,12 @@ server.listen(PORT, async () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, closing server...');
-  server.close(() => {
+  const { redisClient } = require('./config/redis');
+  
+  server.close(async () => {
     console.log('Server closed');
+    await redisClient.quit();
+    console.log('Redis connection closed');
     process.exit(0);
   });
 });

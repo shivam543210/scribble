@@ -1,40 +1,39 @@
+require('dotenv').config();
+const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
+const { PrismaClient } = require('../generated/prisma');
 
-// Create connection pool from DATABASE_URL
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const globalForPrisma = globalThis;
 
-// Log connection events
-pool.on('connect', () => {
-  console.log('✅ PostgreSQL connected successfully');
-});
+// Connection pooling URL from DATABASE_URL
+const connectionString = process.env.DATABASE_URL;
 
-pool.on('error', (err) => {
-  console.error('❌ PostgreSQL connection error:', err.message);
-});
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 
-/**
- * Execute a SQL query
- * @param {string} text - SQL query string
- * @param {Array} params - Query parameters
- * @returns {Promise<Object>} Query result
- */
-const query = (text, params) => pool.query(text, params);
+const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter: adapter,
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 /**
- * Test database connection
- * @returns {Promise<boolean>} Connection success
+ * Tests the database connection.
+ * Used in server.js to ensure the database is accessible on startup.
  */
-const testConnection = async () => {
+async function testConnection() {
   try {
-    const res = await pool.query('SELECT NOW()');
-    console.log(`✅ Database connected at: ${res.rows[0].now}`);
-    return true;
-  } catch (err) {
-    console.error('❌ Database connection failed:', err.message);
-    return false;
+    await prisma.$connect();
+    console.log('Successfully connected to PostgreSQL via Prisma');
+  } catch (error) {
+    console.error('Failed to connect to PostgreSQL:', error.message);
+    // In production, we might want to exit the process
+    // process.exit(1);
   }
-};
+}
 
-module.exports = { pool, query, testConnection };
+module.exports = { prisma, testConnection };

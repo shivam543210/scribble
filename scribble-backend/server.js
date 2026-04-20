@@ -57,14 +57,16 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-  console.log(`CORS enabled for: ${process.env.CORS_ORIGIN}`);
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`CORS enabled for: ${process.env.CORS_ORIGIN}`);
 
-  // Test PostgreSQL connection
-  await testConnection();
-});
+    // Test PostgreSQL connection
+    await testConnection();
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

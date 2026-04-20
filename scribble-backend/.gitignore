@@ -10,3 +10,7 @@ yarn-error.log*
 coverage/
 .vscode/
 .idea/
+
+/generated/prisma
+
+/generated/prisma

@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
+  moduleFormat  = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  participants GameParticipant[]
+}
+
+model GameRoom {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  status      String   // WAITING | ACTIVE | ENDED
+  maxPlayers  Int
+  totalRounds Int
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  participants GameParticipant[]
+  rounds       Round[]
+}
+
+model GameParticipant {
+  id        String   @id @default(uuid())
+  userId    String
+  roomId    String
+  score     Int      @default(0)
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id])
+  room GameRoom @relation(fields: [roomId], references: [id])
+
+  @@unique([userId, roomId])
+}
+
+model Round {
+  id         String    @id @default(uuid())
+  roomId     String
+  word       String    // correct word
+  drawerId   String
+  turnNumber Int
+  startedAt  DateTime
+  endedAt    DateTime?
+
+  room GameRoom @relation(fields: [roomId], references: [id])
+
+  guesses CorrectGuess[]
+}
+
+model CorrectGuess {
+  id        String   @id @default(uuid())
+  roundId   String
+  userId    String
+  guessedAt DateTime @default(now())
+
+  round Round @relation(fields: [roundId], references: [id])
+
+  @@unique([roundId, userId])
+}

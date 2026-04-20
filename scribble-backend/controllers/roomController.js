@@ -1,30 +1,61 @@
-const Room = require('../models/Room');
+const roomService = require('../services/roomService');
+const { prisma } = require('../config/db');
 
 class RoomController {
   /**
-   * Get all active rooms
-   * @param {Request} req - Express request object
-   * @param {Response} res - Express response object with methods: { json: Function, status: Function }
+   * Create a new game room
    */
-  getAllRooms(req, res) {
+  async createRoom(req, res) {
     try {
-      const rooms = Room.getAllRooms();
-      
-      // Format response
+      const { maxPlayers, totalRounds } = req.body;
+      const userId = req.user.id;
+
+      const room = await roomService.createRoom({
+        userId,
+        maxPlayers,
+        totalRounds
+      });
+
+      res.status(201).json({
+        success: true,
+        data: room
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create room'
+      });
+    }
+  }
+
+  /**
+   * Get all active rooms
+   */
+  async getAllRooms(req, res) {
+    try {
+      const rooms = await prisma.gameRoom.findMany({
+        where: { status: 'WAITING' },
+        include: {
+          _count: {
+            select: { participants: true }
+          }
+        }
+      });
+
       const formattedRooms = rooms.map(room => ({
         id: room.id,
-        name: room.name,
-        userCount: room.users.length,
+        code: room.code,
+        status: room.status,
+        maxPlayers: room.maxPlayers,
+        userCount: room._count.participants,
         createdAt: room.createdAt
       }));
 
-      // Sends: { success: true, rooms: Array<{ id, name, userCount, createdAt }> }
       res.json({
         success: true,
         rooms: formattedRooms
       });
     } catch (error) {
-      // Sends: { success: false, error: string }
       res.status(500).json({
         success: false,
         error: 'Failed to fetch rooms'
@@ -34,35 +65,35 @@ class RoomController {
 
   /**
    * Get specific room details
-   * @param {Request} req - Express request with params: { roomId: string }
-   * @param {Response} res - Express response object
    */
-  getRoomById(req, res) {
+  async getRoomById(req, res) {
     try {
       const { roomId } = req.params;
-      const room = Room.getRoom(roomId);
+      const room = await prisma.gameRoom.findUnique({
+        where: { id: roomId },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: { id: true, username: true }
+              }
+            }
+          }
+        }
+      });
 
       if (!room) {
-        // Sends: { success: false, error: string }
         return res.status(404).json({
           success: false,
           error: 'Room not found'
         });
       }
 
-      // Sends: { success: true, room: { id, name, users: Array, userCount, createdAt } }
       res.json({
         success: true,
-        room: {
-          id: room.id,
-          name: room.name,
-          users: room.users,
-          userCount: room.users.length,
-          createdAt: room.createdAt
-        }
+        room
       });
     } catch (error) {
-      // Sends: { success: false, error: string }
       res.status(500).json({
         success: false,
         error: 'Failed to fetch room'
@@ -72,20 +103,18 @@ class RoomController {
 
   /**
    * Check if room exists
-   * @param {Request} req - Express request with params: { roomId: string }
-   * @param {Response} res - Express response object
    */
-  checkRoomExists(req, res) {
+  async checkRoomExists(req, res) {
     try {
       const { roomId } = req.params;
-      const room = Room.getRoom(roomId);
+      const count = await prisma.gameRoom.count({
+        where: { id: roomId }
+      });
 
-      // Sends: { exists: boolean }
       res.json({
-        exists: !!room
+        exists: count > 0
       });
     } catch (error) {
-      // Sends: { exists: false, error: string }
       res.status(500).json({
         exists: false,
         error: 'Failed to check room'

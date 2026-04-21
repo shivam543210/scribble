@@ -24,10 +24,13 @@ const io = initializeSocket(server);
 
 // Middleware
 // CORS middleware - Expects: origin header from client
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+const corsOptions = {
+  origin: 'http://localhost:5173', // Replace with your frontend URL
+  methods: ['GET', 'POST'],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Body parser middleware - Parses: JSON request body into req.body object
 app.use(express.json());

@@ -28,9 +28,11 @@ if (process.env.NODE_ENV !== 'production') {
 async function testConnection() {
   try {
     await prisma.$connect();
+    const result = await prisma.$queryRaw`SELECT inet_server_addr();`;
+console.log(result);
     console.log('Successfully connected to PostgreSQL via Prisma');
   } catch (error) {
-    console.error('Failed to connect to PostgreSQL:', error.message);
+    console.error('Failed to connect to PostgreSQL:');
     // In production, we might want to exit the process
     // process.exit(1);
   }
